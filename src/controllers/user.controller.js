@@ -41,14 +41,29 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Avatar file is required")
     }
     // create user object - create entry in db
-    User.create
+    const user = await User.create({
+        fullname,
+        avatar: avatarUpload.url,
+        coverImage: coverImageUpload.url || "",
+        email,
+        username: username.toLowerCase(),
+        password
+    })
+
     // remove password and tokens field from response
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
     // check for user creation 
     // return res
-    res.status(200).json({
-        username,
-        message: "OK"
-    })
+    return res.status(200).json(
+        new ApiResponse(200, createdUser, "User Registered Successfully")
+    )
 })
 
 export { registerUser }
